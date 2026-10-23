@@ -54,6 +54,23 @@ No PowerShell, o equivalente é:
 $env:GOOS="windows"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o winget-prune.exe
 ```
 
+### Observações sobre a compilação
+
+O repositório já traz o `go.mod` (módulo `wingetprune`, `go 1.27.0`), então o `go mod init` acima
+falha com "go.mod already exists" e pode ser pulado. O comando gera `winget-prune.exe` (com hífen),
+não `wingetprune.exe`; use esse nome nos exemplos de uso. Comandos testados num clone limpo:
+
+```
+git clone https://github.com/rillmind/winget-prune.git
+cd winget-prune
+go build -ldflags="-s -w" -o winget-prune.exe        # no Windows (ou `make build`)
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o winget-prune.exe   # a partir do Linux/macOS
+```
+
+O `go.mod` exige Go 1.27 ou superior (não 1.21). Com um Go mais antigo e `GOTOOLCHAIN=auto` (o
+padrão), o próprio `go` baixa a versão 1.27; com `GOTOOLCHAIN=local`, a compilação falha com
+"go.mod requires go >= 1.27.0".
+
 ## Uso
 
 Teste primeiro sem desinstalar nada:
@@ -82,6 +99,23 @@ Para cada pacote aparece um prompt como este:
 | `q`     | Parar a revisão e ir para o resumo         |
 
 Depois da revisão, o programa lista tudo o que foi marcado e pergunta `Confirmar? [s/N]`. Qualquer resposta diferente de `s` cancela.
+
+## Como testar
+
+Não há testes automatizados. Fora do Windows dá para conferir apenas que o código compila para
+Windows e passa no `go vet`:
+
+```
+GOOS=windows GOARCH=amd64 go build -o winget-prune.exe && GOOS=windows go vet ./...
+```
+
+O teste de verdade é no Windows, com o winget instalado e sem desinstalar nada:
+
+1. Rode `.\winget-prune.exe --dry-run`.
+2. Confira que os pacotes aparecem como `(n/total) Nome - id`, que `i` mostra os detalhes e que
+   `u` marca o pacote.
+3. Aperte `q`, confirme com `s` e veja que o resumo lista os marcados e termina com
+   `(dry-run: nada foi desinstalado)`.
 
 ## Suporte a outros sistemas operacionais
 
